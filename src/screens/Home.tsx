@@ -279,24 +279,22 @@ export default function Home() {
         )}
 
         {/* Controles de paginação */}
-        <Box
-          style={{
-            padding: 16,
-            flexDirection: "row",
-            justifyContent: "center",
-            columnGap: 12,
-            backgroundColor: "#fff",
-            borderTopWidth: 1,
-            borderTopColor: "#e5e7eb",
-          }}
-        >
-          <Button onPress={() => setFirst((n) => Math.max(10, n - 10))}>
-            <Text>-10</Text>
-          </Button>
-          <Button onPress={() => setFirst((n) => n + 10)}>
-            <Text>+10</Text>
-          </Button>
-        </Box>
+
+          <Box
+            style={{
+              padding: 16,
+              flexDirection: "row",
+              justifyContent: "center",
+              backgroundColor: "#fff",
+              borderTopWidth: 1,
+              borderTopColor: "#e5e7eb",
+            }}
+          >
+            <Button onPress={() => setFirst((n) => n + 150)}>
+              <Text>Carregar mais</Text>
+            </Button>
+          </Box>
+
       </Box>
 
       {/* CSS keyframes para web shimmer (opcional) */}
