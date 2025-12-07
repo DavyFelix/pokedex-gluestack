@@ -1,16 +1,8 @@
-
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@apollo/client";
 import { GET_POKEMONS } from "../graphql/queries";
-import { Box } from "@/components/ui/box";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Text } from "@/components/ui/text";
 import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "../types/navigation";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-
-type NavProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
 import {
   Pressable,
@@ -18,72 +10,64 @@ import {
   FlatList,
   RefreshControl,
   SafeAreaView,
-  Platform,
   View,
-  StyleSheet,
   Animated,
+  StyleSheet,
 } from "react-native";
 
-
 import { LinearGradient } from "expo-linear-gradient";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
 
-/**
- * Skeleton genérico com shimmer (sem depender de libs).
- * Usa gradient simples com Animated para RN; no web, usa CSS animation.
- */
+import { useTheme } from "src/theme/themeContext";
+import { RootStackParamList } from "../types/navigation";
 
-type SkeletonProps = {
-  width: number | string;
-  height: number;
-  radius?: number;
-  style?: any;
-};
-function Skeleton({ width, height, radius = 8, style }: SkeletonProps) {
-  const shimmerTranslate = React.useRef(new Animated.Value(-1)).current;
+type NavProp = NativeStackNavigationProp<RootStackParamList, "Home">;
+
+// -------------------------------------------------------------
+// Skeleton
+// -------------------------------------------------------------
+function Skeleton({ width, height, radius = 12, style }: any) {
+  const shimmer = useRef(new Animated.Value(0)).current;
+  const { theme } = useTheme();
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerTranslate, {
-          toValue: 1,
-          duration: 1400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmerTranslate, {
-          toValue: -1,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [shimmerTranslate]);
+    Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 1300,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
 
-  const translateX = shimmerTranslate.interpolate({
-    inputRange: [-1, 1],
-    outputRange: [-widthToNumber(width), widthToNumber(width)],
+  const translateX = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-150, 150],
   });
 
   return (
     <View
       style={[
-        styles.skeletonContainer,
         {
           width,
           height,
           borderRadius: radius,
+          overflow: "hidden",
+          backgroundColor: theme.border,
         },
         style,
       ]}
     >
-      {/* Base cinza */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "#e5e7eb" }]} />
-
-      {/* Faixa shimmer */}
-      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ translateX }] }]}>
+      <Animated.View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          transform: [{ translateX }],
+        }}
+      >
         <LinearGradient
-          colors={["rgba(229,231,235,0)", "rgba(255,255,255,0.7)", "rgba(229,231,235,0)"]}
+          colors={["transparent", "rgba(255,255,255,0.5)", "transparent"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={StyleSheet.absoluteFill}
@@ -92,211 +76,284 @@ function Skeleton({ width, height, radius = 8, style }: SkeletonProps) {
     </View>
   );
 }
-function widthToNumber(w: number | string) {
-  if (typeof w === "number") return w;
-  // Para valores em %, usamos um valor base para o range do shimmer.
-  // Ajuste se quiser um efeito diferente.
-  return 200;
-}
 
-const styles = StyleSheet.create({
-  skeletonContainer: {
-    overflow: "hidden",
-    position: "relative",
-  },
-});
+// -------------------------------------------------------------
+// Header Search
+// -------------------------------------------------------------
+function SearchHeader({ search, setSearch, onRefresh, isRefreshing }: any) {
+  const { theme } = useTheme();
 
-
-/** Header de busca com debounce */
-function SearchHeader({
-  search,
-  setSearch,
-  onRefresh,
-  isRefreshing,
-}: {
-  search: string;
-  setSearch: (v: string) => void;
-  onRefresh: () => void;
-  isRefreshing: boolean;
-}) {
   return (
-    <Box style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, backgroundColor: "#fff" }}>
-      <Text style={{ fontSize: 24, fontWeight: "800" }}>Pokédex</Text>
+    <View style={[styles.headerContainer, { backgroundColor: theme.background }]}>
+      <Text style={[styles.headerTitle, { color: theme.text }]}>Pokédex</Text>
 
-      <Box style={{ marginTop: 12, flexDirection: "row", alignItems: "center", columnGap: 8 }}>
+      <View style={styles.searchRow}>
         <Input
-          placeholder="Buscar por nome…"
+          placeholder="Buscar Pokémon"
           value={search}
           onChangeText={setSearch}
-          style={{
-            flex: 1,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            borderWidth: 1,
-            borderColor: "#e5e7eb",
-            borderRadius: 10,
-            backgroundColor: "#fafafa",
-          }}
+          style={[
+            styles.searchInput,
+            {
+              backgroundColor: theme.card,
+              color: theme.text,
+              borderColor: theme.border,
+              borderWidth: 1,
+            },
+          ]}
+          placeholderTextColor={theme.textSecondary}
         />
         <Button onPress={onRefresh} disabled={isRefreshing}>
-          <Text>{isRefreshing ? "Atualizando…" : "Atualizar"}</Text>
+          <Text>{isRefreshing ? "..." : "↻"}</Text>
         </Button>
-      </Box>
-    </Box>
+      </View>
+    </View>
   );
 }
 
-
+// -------------------------------------------------------------
+// Card Pokémon
+// -------------------------------------------------------------
 function PokemonCard({ p }: { p: any }) {
   const navigation = useNavigation<NavProp>();
+  const scale = useRef(new Animated.Value(1)).current;
+  const { theme } = useTheme();
 
   return (
     <Pressable
+      onPressIn={() =>
+        Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start()
+      }
+      onPressOut={() =>
+        Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()
+      }
       onPress={() => navigation.navigate("PokemonDetails", { name: p.name })}
       style={{ width: "48%" }}
     >
-      <Box
-        style={{
-          borderWidth: 1,
-          borderColor: "#e5e7eb",
-          borderRadius: 16,
-          padding: 12,
-          alignItems: "center",
-          backgroundColor: "#fff",
-          shadowColor: "#000",
-          shadowOpacity: 0.08,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: 3 },
-          elevation: 2,
-        }}
+      <Animated.View
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.card,
+            shadowColor: theme.shadow,
+            transform: [{ scale }],
+            borderColor: theme.border,
+            borderWidth: 1,
+          },
+        ]}
       >
         <Image
           source={{ uri: p.image }}
-          style={{
-            width: 110,
-            height: 110,
-            borderRadius: 12,
-            marginBottom: 8,
-            backgroundColor: "#f3f4f6",
-          }}
+          style={[
+            styles.cardImage,
+            { backgroundColor: theme.background },
+          ]}
         />
-        <Text style={{ fontWeight: "700", fontSize: 16 }}>{p.name}</Text>
-        <Text style={{ color: "#6b7280", marginTop: 2 }}>#{p.number}</Text>
-      </Box>
+
+        <Text style={[styles.cardName, { color: theme.text }]}>
+          {p.name}
+        </Text>
+
+        <Text style={[styles.cardNumber, { color: theme.textSecondary }]}>
+          #{p.number}
+        </Text>
+      </Animated.View>
     </Pressable>
   );
 }
 
-/** Skeleton grid enquanto carrega */
+// -------------------------------------------------------------
+// Loading Grid
+// -------------------------------------------------------------
 function LoadingGrid() {
-  const items = Array.from({ length: 10 });
   return (
-    <Box style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, paddingHorizontal: 16, paddingTop: 8 }}>
-      {items.map((_, i) => (
-        <Box key={i} style={{ width: "48%" }}>
-          <Box
-            style={{
-              borderWidth: 1,
-              borderColor: "#e5e7eb",
-              borderRadius: 16,
-              padding: 12,
-              alignItems: "center",
-              backgroundColor: "#fff",
-            }}
-          >
-            <Skeleton width={110} height={110} radius={12} style={{ marginBottom: 10 }} />
+    <View style={styles.grid}>
+      {Array.from({ length: 10 }).map((_, i) => (
+        <View key={i} style={{ width: "48%", marginBottom: 16 }}>
+          <View style={styles.card}>
+            <Skeleton width={110} height={110} style={{ marginBottom: 12 }} />
             <Skeleton width={"70%"} height={16} />
             <Skeleton width={"40%"} height={14} style={{ marginTop: 6 }} />
-          </Box>
-        </Box>
+          </View>
+        </View>
       ))}
-    </Box>
+    </View>
   );
 }
 
+// -------------------------------------------------------------
+// HOME COM BOTÃO DE TROCA DE TEMA
+// -------------------------------------------------------------
 export default function Home() {
-  const [first, setFirst] = useState(151);
+  const navigation = useNavigation<NavProp>();
+  const { theme, toggleTheme, mode } = useTheme();
+
+  const [first] = useState(151);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
-  // Debounce: atualiza o termo de busca 250ms depois do usuário digitar
+  // 🔥 BOTÃO NO HEADER QUE TROCA O TEMA
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={toggleTheme}
+          style={{ paddingHorizontal: 12 }}
+        >
+          <Text style={{ fontSize: 20 }}>
+            {mode === "light" ? "🌙" : "☀️"}
+          </Text>
+        </Pressable>
+      ),
+      title: "",
+      headerStyle: { backgroundColor: theme.background },
+      headerShadowVisible: false,
+    });
+  }, [navigation, toggleTheme, theme, mode]);
+
+  // debounce
   useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput), 250);
+    const t = setTimeout(() => setSearch(searchInput), 200);
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const { data, loading, error, refetch } = useQuery(GET_POKEMONS, { variables: { first } });
+  const { data, loading, error, refetch } = useQuery(GET_POKEMONS, {
+    variables: { first },
+  });
+
   const list = data?.pokemons ?? [];
 
   const filtered = useMemo(
-    () => list.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase())),
+    () =>
+      list.filter((p: any) =>
+        p.name.toLowerCase().includes(search.toLowerCase())
+      ),
     [list, search]
   );
 
-  const isRefreshing = loading; // simples: você pode usar apollo's networkStatus para granularidade
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }}>
-      <Box style={{ flex: 1 }}>
+    <LinearGradient
+      colors={[theme.background, theme.background]}
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={{ flex: 1 }}>
         <SearchHeader
           search={searchInput}
           setSearch={setSearchInput}
           onRefresh={() => refetch({ first })}
-          isRefreshing={isRefreshing}
+          isRefreshing={loading}
         />
 
-        {/* Estados: erro / loading / lista */}
         {error ? (
-          <Box style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-            <Box
-              style={{
-                borderWidth: 1,
-                borderColor: "#fecaca",
-                backgroundColor: "#fee2e2",
-                padding: 12,
-                borderRadius: 12,
-              }}
-            >
-              <Text style={{ color: "#b91c1c", fontWeight: "700" }}>Erro</Text>
-              <Text style={{ color: "#7f1d1d", marginTop: 4 }}>{String(error.message)}</Text>
-              <Box style={{ marginTop: 8 }}>
-                <Button onPress={() => refetch({ first })}>
-                  <Text>Tentar novamente</Text>
-                </Button>
-              </Box>
-            </Box>
-          </Box>
+          <View style={[styles.errorBox, { backgroundColor: theme.errorBg }]}>
+            <Text style={[styles.errorTitle, { color: theme.errorText }]}>
+              Erro ao carregar
+            </Text>
+            <Text style={[styles.errorMessage, { color: theme.errorText }]}>
+              {error.message}
+            </Text>
+            <Button onPress={() => refetch({ first })}>
+              <Text>Tentar novamente</Text>
+            </Button>
+          </View>
         ) : loading ? (
           <LoadingGrid />
         ) : (
           <FlatList
             data={filtered}
-            keyExtractor={(p: any) => p.id}
+            keyExtractor={(p) => p.id}
             numColumns={2}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}
-            columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 12 }}
+            columnWrapperStyle={{ justifyContent: "space-between" }}
+            contentContainerStyle={{ padding: 16 }}
             renderItem={({ item }) => <PokemonCard p={item} />}
             refreshControl={
-              <RefreshControl refreshing={isRefreshing} onRefresh={() => refetch({ first })} />
+              <RefreshControl
+                refreshing={loading}
+                onRefresh={() => refetch({ first })}
+                tintColor={theme.text}
+              />
             }
             ListEmptyComponent={
-              <Box style={{ padding: 24, alignItems: "center" }}>
-                <Text style={{ color: "#6b7280" }}>Nenhum Pokémon encontrado para “{search}”.</Text>
-              </Box>
+              <View style={styles.emptyBox}>
+                <Text style={{ color: theme.textSecondary }}>
+                  Nenhum Pokémon encontrado.
+                </Text>
+              </View>
             }
           />
         )}
-      </Box>
-
-      {/* CSS keyframes para web shimmer (opcional) */}
-      {Platform.OS === "web" && (
-        <style>{`
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-        `}</style>
-      )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
+
+// -------------------------------------------------------------
+// STYLES
+// -------------------------------------------------------------
+const styles = StyleSheet.create({
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    paddingTop: 4,
+  },
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: "800",
+    marginBottom: 12,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    columnGap: 12,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+  },
+
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    padding: 16,
+    justifyContent: "space-between",
+  },
+
+  card: {
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    alignItems: "center",
+  },
+
+  cardImage: {
+    width: 110,
+    height: 110,
+    borderRadius: 16,
+  },
+  cardName: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 10,
+  },
+  cardNumber: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+
+  errorBox: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 16,
+  },
+  errorTitle: {
+    fontWeight: "700",
+  },
+  errorMessage: { marginVertical: 6 },
+
+  emptyBox: {
+    padding: 20,
+    alignItems: "center",
+  },
+});
