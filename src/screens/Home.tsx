@@ -6,6 +6,11 @@ import { Box } from "@/components/ui/box";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
+import { useNavigation } from "@react-navigation/native";
+import { RootStackParamList } from "../types/navigation";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+type NavProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
 import {
   Pressable,
@@ -141,10 +146,15 @@ function SearchHeader({
   );
 }
 
-/** Card do Pokémon com design mais limpo */
+
 function PokemonCard({ p }: { p: any }) {
+  const navigation = useNavigation<NavProp>();
+
   return (
-    <Pressable style={{ width: "48%" }}>
+    <Pressable
+      onPress={() => navigation.navigate("PokemonDetails", { name: p.name })}
+      style={{ width: "48%" }}
+    >
       <Box
         style={{
           borderWidth: 1,
@@ -153,7 +163,6 @@ function PokemonCard({ p }: { p: any }) {
           padding: 12,
           alignItems: "center",
           backgroundColor: "#fff",
-          // leve sombra (iOS/Android/Web)
           shadowColor: "#000",
           shadowOpacity: 0.08,
           shadowRadius: 6,
@@ -168,7 +177,7 @@ function PokemonCard({ p }: { p: any }) {
             height: 110,
             borderRadius: 12,
             marginBottom: 8,
-            backgroundColor: "#f3f4f6", // gray-100 enquanto carrega imagem
+            backgroundColor: "#f3f4f6",
           }}
         />
         <Text style={{ fontWeight: "700", fontSize: 16 }}>{p.name}</Text>
@@ -206,7 +215,7 @@ function LoadingGrid() {
 }
 
 export default function Home() {
-  const [first, setFirst] = useState(30);
+  const [first, setFirst] = useState(151);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
@@ -277,24 +286,6 @@ export default function Home() {
             }
           />
         )}
-
-        {/* Controles de paginação */}
-
-          <Box
-            style={{
-              padding: 16,
-              flexDirection: "row",
-              justifyContent: "center",
-              backgroundColor: "#fff",
-              borderTopWidth: 1,
-              borderTopColor: "#e5e7eb",
-            }}
-          >
-            <Button onPress={() => setFirst((n) => n + 150)}>
-              <Text>Carregar mais</Text>
-            </Button>
-          </Box>
-
       </Box>
 
       {/* CSS keyframes para web shimmer (opcional) */}
