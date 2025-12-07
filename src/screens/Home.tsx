@@ -13,6 +13,7 @@ import {
   View,
   Animated,
   StyleSheet,
+  TouchableOpacity,
 } from "react-native";
 
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,6 +23,7 @@ import { Text } from "@/components/ui/text";
 
 import { useTheme } from "src/theme/themeContext";
 import { RootStackParamList } from "../types/navigation";
+import { FontAwesome } from "@expo/vector-icons";
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
@@ -144,16 +146,9 @@ function PokemonCard({ p }: { p: any }) {
       >
         <Image
           source={{ uri: p.image }}
-          style={[
-            styles.cardImage,
-            { backgroundColor: theme.background },
-          ]}
+          style={[styles.cardImage, { backgroundColor: theme.background }]}
         />
-
-        <Text style={[styles.cardName, { color: theme.text }]}>
-          {p.name}
-        </Text>
-
+        <Text style={[styles.cardName, { color: theme.text }]}>{p.name}</Text>
         <Text style={[styles.cardNumber, { color: theme.textSecondary }]}>
           #{p.number}
         </Text>
@@ -182,7 +177,7 @@ function LoadingGrid() {
 }
 
 // -------------------------------------------------------------
-// HOME COM BOTÃO DE TROCA DE TEMA
+// Home
 // -------------------------------------------------------------
 export default function Home() {
   const navigation = useNavigation<NavProp>();
@@ -192,26 +187,29 @@ export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
 
-  // 🔥 BOTÃO NO HEADER QUE TROCA O TEMA
+  // Configuração do header
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={toggleTheme}
-          style={{ paddingHorizontal: 12 }}
-        >
-          <Text style={{ fontSize: 20 }}>
-            {mode === "light" ? "🌙" : "☀️"}
-          </Text>
-        </Pressable>
-      ),
       title: "",
       headerStyle: { backgroundColor: theme.background },
       headerShadowVisible: false,
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={toggleTheme}
+          style={{ marginRight: 16 }}
+          activeOpacity={0.7}
+        >
+          <FontAwesome
+            name={mode === "light" ? "moon-o" : "sun-o"}
+            size={24}
+            color={theme.text}
+          />
+        </TouchableOpacity>
+      ),
     });
   }, [navigation, toggleTheme, theme, mode]);
 
-  // debounce
+  // debounce para pesquisa
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 200);
     return () => clearTimeout(t);
@@ -232,10 +230,7 @@ export default function Home() {
   );
 
   return (
-    <LinearGradient
-      colors={[theme.background, theme.background]}
-      style={{ flex: 1 }}
-    >
+    <LinearGradient colors={[theme.background, theme.background]} style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
         <SearchHeader
           search={searchInput}
