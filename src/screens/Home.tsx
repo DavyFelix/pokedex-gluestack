@@ -147,6 +147,7 @@ function PokemonCard({ p }: { p: any }) {
         <Image
           source={{ uri: p.image }}
           style={[styles.cardImage, { backgroundColor: theme.background }]}
+          resizeMode="contain"
         />
         <Text style={[styles.cardName, { color: theme.text }]}>{p.name}</Text>
         <Text style={[styles.cardNumber, { color: theme.textSecondary }]}>
@@ -322,11 +323,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cardImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 16,
-  },
+cardImage: {
+  width: 110,
+  height: 110,
+  borderRadius: 16,
+  aspectRatio: 1, // mantém proporção quadrada
+},
   cardName: {
     fontSize: 16,
     fontWeight: "700",
