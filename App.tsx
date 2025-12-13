@@ -7,6 +7,10 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { store, persistor } from "./src/store";
+
 import { client } from "./src/apolloClient";
 
 // Screens
@@ -18,7 +22,8 @@ import { ThemeProvider, useTheme } from "./src/theme/themeContext";
 
 const Stack = createNativeStackNavigator();
 
-// Configurar como as notificações aparecem quando o app está em primeiro plano
+/* ================= NOTIFICATIONS ================= */
+
 Notifications.setNotificationHandler({
   handleNotification: async () =>
     ({
@@ -26,9 +31,11 @@ Notifications.setNotificationHandler({
       shouldSetBadge: false,
       shouldShowBanner: true,
       shouldShowList: true,
-      shouldPlaySound: true, // força a compatibilidade com o tipo
+      shouldPlaySound: true,
     } as Notifications.NotificationBehavior),
 });
+
+/* ================= NAVIGATION ================= */
 
 function AppNavigation() {
   const { mode, theme, toggleTheme } = useTheme();
@@ -58,7 +65,7 @@ function AppNavigation() {
             ),
           }}
         >
-          <Stack.Screen name="Home" component={Home} options={{ headerShown: true }} />
+          <Stack.Screen name="Home" component={Home} />
           <Stack.Screen
             name="PokemonDetails"
             component={PokemonDetails}
@@ -70,58 +77,67 @@ function AppNavigation() {
   );
 }
 
-export default function App() {
+/* ================= APP ================= */
 
-  useEffect(() => {
-    registerForPushNotificationsAsync();
-  }, []);
+export default function App() {
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
-  // Registrar para receber notificações push
-  registerForPushNotificationsAsync().then(token => console.log("Push Token:", token));
+    registerForPushNotificationsAsync().then(token =>
+      console.log("Push Token:", token)
+    );
 
-  // Recebe notificações enquanto o app está em primeiro plano
-  const notificationSubscription = Notifications.addNotificationReceivedListener(notification => {
-    console.log("Notificação recebida:", notification);
-  });
+    const notificationSubscription =
+      Notifications.addNotificationReceivedListener(notification => {
+        console.log("Notificação recebida:", notification);
+      });
 
-  // Detecta quando o usuário interage com a notificação
-  const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-    console.log("Resposta à notificação:", response);
-  });
+    const responseSubscription =
+      Notifications.addNotificationResponseReceivedListener(response => {
+        console.log("Resposta à notificação:", response);
+      });
 
-  return () => {
-    // Remove os listeners corretamente
-    notificationSubscription.remove();
-    responseSubscription.remove();
-  };
-}, []);
+    return () => {
+      notificationSubscription.remove();
+      responseSubscription.remove();
+    };
+  }, []);
 
   return (
-    <ApolloProvider client={client}>
-      <ThemeProvider>
-        <AppNavigation />
-      </ThemeProvider>
-    </ApolloProvider>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <ApolloProvider client={client}>
+          <ThemeProvider>
+            <AppNavigation />
+          </ThemeProvider>
+        </ApolloProvider>
+      </PersistGate>
+    </Provider>
   );
 }
 
-// Função para registrar e obter o token de push
+/* ================= PUSH TOKEN ================= */
+
 async function registerForPushNotificationsAsync(): Promise<string | undefined> {
   let token: string | undefined;
+
   if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+
     let finalStatus = existingStatus;
+
     if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
+
     if (finalStatus !== "granted") {
       alert("Falha ao obter permissão para notificações!");
       return;
     }
+
     token = (await Notifications.getExpoPushTokenAsync()).data;
   } else {
     alert("Você precisa de um dispositivo físico para receber notificações push");
@@ -135,7 +151,6 @@ async function registerForPushNotificationsAsync(): Promise<string | undefined> 
       lightColor: "#FF231F7C",
     });
   }
-  
 
   return token;
 }
