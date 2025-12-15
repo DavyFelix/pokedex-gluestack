@@ -2,6 +2,7 @@
   "expo": {
     "name": "Pokedex",
     "slug": "pokedex",
+    "icon": "./assets/pokedex.png",
     "plugins": [
       "expo-asset",
       "expo-notifications",
