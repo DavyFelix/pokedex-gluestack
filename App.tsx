@@ -17,24 +17,33 @@ import { client } from "./src/apolloClient";
 import Home from "./src/screens/Home";
 import PokemonDetails from "./src/screens/PokemonDetails";
 
+
 // Theme Provider
 import { ThemeProvider, useTheme } from "./src/theme/themeContext";
+
 
 const Stack = createNativeStackNavigator();
 
 /* ================= NOTIFICATIONS ================= */
 
+
 Notifications.setNotificationHandler({
   handleNotification: async () =>
-    ({
-      shouldShowAlert: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-    } as Notifications.NotificationBehavior),
+    Platform.select({
+      web: {
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      },
+      default: {
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      },
+    }) as Notifications.NotificationBehavior,
 });
-
 /* ================= NAVIGATION ================= */
 
 function AppNavigation() {

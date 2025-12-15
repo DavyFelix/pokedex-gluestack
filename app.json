@@ -1,5 +1,15 @@
 {
-  "plugins": [
-    "expo-asset"
-  ]
+  "expo": {
+    "name": "Pokedex",
+    "slug": "pokedex",
+    "plugins": [
+      "expo-asset",
+      "expo-notifications",
+      "expo-font",
+      "expo-router"
+    ],
+    "android": {
+      "package": "com.anonymous.pokedex"
+    }
+  }
 }

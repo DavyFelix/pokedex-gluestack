@@ -16,7 +16,9 @@ import type { RouteProp } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../theme/themeContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import * as Notifications from "expo-notifications";
+import { sendFavoriteNotification } from "../services/notification";
+import { initNotifications } from "../services/notification";
+import * as Device from "expo-device";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
@@ -109,6 +111,10 @@ export default function PokemonDetails() {
   const route = useRoute<Route>();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  
+  useEffect(() => {
+    initNotifications();
+}, []);
 
   const { name } = route.params;
   const { theme, mode } = useTheme();
@@ -129,35 +135,29 @@ export default function PokemonDetails() {
   /* ================= FAVORITO ================= */
 
   const toggleFavorite = useCallback(() => {
-    Animated.sequence([
-      Animated.timing(favScale, {
-        toValue: 1.2,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(favScale, {
-        toValue: 1,
-        duration: 130,
-        useNativeDriver: true,
-      }),
-    ]).start();
+  Animated.sequence([
+    Animated.timing(favScale, {
+      toValue: 1.2,
+      duration: 100,
+      useNativeDriver: true,
+    }),
+    Animated.timing(favScale, {
+      toValue: 1,
+      duration: 130,
+      useNativeDriver: true,
+    }),
+  ]).start();
 
-    if (isFav) {
-      dispatch(removeFavorite(name));
-    } else {
-      dispatch(addFavorite(name));
+  if (isFav) {
+    dispatch(removeFavorite(name));
+  } else {
+    dispatch(addFavorite(name));
 
-      Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Novo favorito!",
-          body: `${name} foi adicionado aos seus favoritos ⭐`,
-          sound: true,
-        },
-        trigger: null,
-      });
+    if (Device.isDevice) {
+      sendFavoriteNotification(name);
     }
-  }, [dispatch, isFav, name]);
-
+  }
+}, [dispatch, isFav, name]);
   /* ================= LOADING / ERROR ================= */
 
   if (loading || !data?.pokemon) {
