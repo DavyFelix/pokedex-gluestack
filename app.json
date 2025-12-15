@@ -10,6 +10,15 @@
     ],
     "android": {
       "package": "com.anonymous.pokedex"
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "1bef0447-0a41-4b3c-bb13-192c4c182938"
+      }
+    },
+    "owner": "davydesouza"
   }
 }
