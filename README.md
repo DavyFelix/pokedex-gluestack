@@ -118,7 +118,7 @@ npx expo run:android
 
 ## 🏫 Instituição
 
-*(Adicionar nome da instituição, curso e disciplina)*
+INFNET
 
 ---
 
