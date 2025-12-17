@@ -10,7 +10,8 @@
       "expo-router"
     ],
     "android": {
-      "package": "com.anonymous.pokedex"
+      "package": "br.davydesouza.pokedex",
+      "googleServicesFile": "./android/app/google-services.json"
     },
     "extra": {
       "router": {
