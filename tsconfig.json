@@ -7,7 +7,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "src/*",
+        "./*"
+      ],
+      "tailwind.config": [
+        "./tailwind.config.js"
       ]
     },
     "moduleResolution": "bundler",
@@ -15,8 +19,10 @@
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
-, "gluestack-ui-provider.js"  ],
+    "**/*.tsx",
+    "gluestack-ui-provider.js",
+    "nativewind-env.d.ts"
+  ],
   "exclude": [
     "node_modules"
   ],

@@ -1,4 +1,4 @@
-package com.anonymous.pokedex
+package br.davydesouza.pokedex
 
 import android.os.Build
 import android.os.Bundle

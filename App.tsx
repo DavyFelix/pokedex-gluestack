@@ -22,6 +22,9 @@ import PokemonDetails from "./src/screens/PokemonDetails";
 import { ThemeProvider, useTheme } from "./src/theme/themeContext";
 
 
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import '@/global.css';
+
 const Stack = createNativeStackNavigator();
 
 /* ================= NOTIFICATIONS ================= */
@@ -51,7 +54,9 @@ function AppNavigation() {
   const navTheme = mode === "dark" ? DarkTheme : DefaultTheme;
 
   return (
-    <>
+    
+    <GluestackUIProvider mode="dark">
+      <>
       <StatusBar
         barStyle={mode === "dark" ? "light-content" : "dark-content"}
         backgroundColor={theme.background}
@@ -83,6 +88,8 @@ function AppNavigation() {
         </Stack.Navigator>
       </NavigationContainer>
     </>
+    </GluestackUIProvider>
+  
   );
 }
 

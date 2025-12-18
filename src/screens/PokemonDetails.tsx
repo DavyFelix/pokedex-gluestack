@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Platform,
 } from "react-native";
-import { Text } from "@/components/ui/text";
+import { Text } from "@gluestack-ui/themed";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useQuery } from "@apollo/client";
 import { GET_POKEMON } from "../graphql/queries";

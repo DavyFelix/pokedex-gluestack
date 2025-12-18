@@ -1,21 +1,22 @@
-
 module.exports = function (api) {
   api.cache(true);
+
   return {
-    presets: ['babel-preset-expo'],
+    presets: [['babel-preset-expo'], 'nativewind/babel'],
+
     plugins: [
       [
         'module-resolver',
         {
           root: ['./'],
-          extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+
           alias: {
-            '@src': './src',
-            '@components': './src/components',
-            '@screens': './src/screens',
+            '@': './',
+            'tailwind.config': './tailwind.config.js',
           },
         },
       ],
+      'react-native-worklets/plugin',
     ],
   };
 };
