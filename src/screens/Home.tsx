@@ -55,21 +55,33 @@ const types = [
   "Ice",
   "Dragon",
   "Normal",
-  "Flying"
+  "Flying",
+  "Fighting",
+  "Ghost",
+  "Bug",
+  "Ground",
+  "Dark"
 ];
 
 const TYPE_COLORS: Record<string, string> = {
-  Grass: "#4CAF50",
-  Fire: "#FF7043",
-  Water: "#42A5F5",
-  Poison: "#AB47BC",
-  Electric: "#FFD54F",
-  Rock: "#8D6E63",
-  Psychic: "#EC407A",
-  Ice: "#4DD0E1",
-  Dragon: "#5C6BC0",
-  Flying: "#a0aefdff",
-  Normal: "#f4fa9cff"
+  Fire: "#FBAE46",
+  Water: "#4F90D5",
+  Grass: "#7BCB5C",
+  Electric: "#F4D23B",
+  Psychic: "#F95587",
+  Ice: "#74CEC0",
+  Dragon: "#096DC4",
+  Dark: "#5A5465",
+  Fairy: "#EC90E7",
+  Steel: "#5A8CA3",
+  Rock: "#C5B889",
+  Ground: "#D6B55A",
+  Bug: "#A7B723",
+  Ghost: "#6667B0",
+  Fighting: "#C12239",
+  Normal: "#A8A77A",
+  Poison: "#B567CE",
+  Flying: "#A1BBEC",
 };
 
 /* ==================== SKELETON ==================== */
