@@ -3,22 +3,22 @@ import {
   View,
   Image,
   Animated,
-  TouchableOpacity,
   StyleSheet,
   Platform,
 } from "react-native";
-import { Text } from "@gluestack-ui/themed";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@apollo/client";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Device from "expo-device";
+
+import { Box, VStack, HStack, Text, Pressable } from "@gluestack-ui/themed";
+
 import { GET_POKEMON } from "../graphql/queries";
 import { RootStackParamList } from "../types/navigation";
-import type { RouteProp } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../theme/themeContext";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { sendFavoriteNotification } from "../services/notification";
-import { initNotifications } from "../services/notification";
-import * as Device from "expo-device";
+
+import PokemonDetailsSkeleton from "./PokemonDetailsSkeleton";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
@@ -27,11 +27,41 @@ import {
   removeFavorite,
 } from "../store/slices/favoritesSlice";
 
+import {
+  initNotifications,
+  sendFavoriteNotification,
+} from "../services/notification";
+
 /* ================= TYPES ================= */
 
-type Route = RouteProp<RootStackParamList, "PokemonDetails">;
+type PokemonDetailsRouteProp = RouteProp<
+  RootStackParamList,
+  "PokemonDetails"
+>;
 
-/* ================= CORES ================= */
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "PokemonDetails"
+>;
+
+interface Pokemon {
+  name: string;
+  number: string;
+  image: string;
+  classification: string;
+  types: string[];
+  resistant: string[];
+  weaknesses: string[];
+  height: { minimum: string; maximum: string };
+  weight: { minimum: string; maximum: string };
+  evolutions?: Array<{
+    name: string;
+    number: string;
+    image: string;
+  }>;
+}
+
+/* ================= CORES POR TIPO ================= */
 
 const TYPE_COLORS: Record<string, string> = {
   Fire: "#FBAE46",
@@ -54,150 +84,82 @@ const TYPE_COLORS: Record<string, string> = {
   Flying: "#A1BBEC",
 };
 
-/* ================= SKELETON ================= */
-
-function Skeleton({ width, height, radius = 12, style }: any) {
-  const shimmer = useRef(new Animated.Value(0)).current;
-  const { theme } = useTheme();
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(shimmer, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
-
-  const translateX = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-150, 150],
-  });
-
-  return (
-    <View
-      style={[
-        {
-          width,
-          height,
-          borderRadius: radius,
-          overflow: "hidden",
-          backgroundColor: theme.border,
-        },
-        style,
-      ]}
-    >
-      <Animated.View
-        style={{
-          ...StyleSheet.absoluteFillObject,
-          transform: [{ translateX }],
-        }}
-      >
-        <LinearGradient
-          colors={["transparent", "rgba(255,255,255,0.5)", "transparent"]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-    </View>
-  );
-}
-
 /* ================= COMPONENT ================= */
 
-export default function PokemonDetails() {
-  const route = useRoute<Route>();
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  
-  useEffect(() => {
-    initNotifications();
-}, []);
-
-  const { name } = route.params;
+export default function PokemonDetails(): JSX.Element {
+  const route = useRoute<PokemonDetailsRouteProp>();
+  const navigation = useNavigation<NavigationProp>();
   const { theme, mode } = useTheme();
   const dispatch = useDispatch();
+
+  const { name } = route.params;
+
+  useEffect(() => {
+    initNotifications();
+  }, []);
 
   const favorites = useSelector(
     (state: RootState) => state.favorites.items
   );
   const isFav = favorites.includes(name);
 
-  const { data, loading, error } = useQuery(GET_POKEMON, {
-    variables: { name },
-  });
+  const { data, loading, error } = useQuery<{ pokemon: Pokemon }>(
+    GET_POKEMON,
+    { variables: { name } }
+  );
 
-  const scrollY = useRef(new Animated.Value(0)).current;
   const favScale = useRef(new Animated.Value(1)).current;
 
   /* ================= FAVORITO ================= */
 
   const toggleFavorite = useCallback(() => {
-  Animated.sequence([
-    Animated.timing(favScale, {
-      toValue: 1.2,
-      duration: 100,
-      useNativeDriver: true,
-    }),
-    Animated.timing(favScale, {
-      toValue: 1,
-      duration: 130,
-      useNativeDriver: true,
-    }),
-  ]).start();
+    Animated.sequence([
+      Animated.timing(favScale, {
+        toValue: 1.2,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(favScale, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-  if (isFav) {
-    dispatch(removeFavorite(name));
-  } else {
-    dispatch(addFavorite(name));
-
-    if (Device.isDevice) {
-      sendFavoriteNotification(name);
+    if (isFav) {
+      dispatch(removeFavorite(name));
+    } else {
+      dispatch(addFavorite(name));
+      if (Device.isDevice) {
+        sendFavoriteNotification(name);
+      }
     }
-  }
-}, [dispatch, isFav, name]);
+  }, [dispatch, isFav, name]);
+
   /* ================= LOADING / ERROR ================= */
 
-  if (loading || !data?.pokemon) {
+  if (loading) return <PokemonDetailsSkeleton />;
+
+  if (error || !data?.pokemon) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.background, padding: 20 }}>
-        <Skeleton
-          width={220}
-          height={220}
-          radius={120}
-          style={{ alignSelf: "center", marginBottom: 16 }}
-        />
-        <Skeleton width={"60%"} height={28} />
-      </View>
+      <Box flex={1} justifyContent="center" alignItems="center">
+        <Text color={theme.text}>Erro ao carregar Pokémon</Text>
+      </Box>
     );
   }
-
-  if (error) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: theme.background,
-        }}
-      >
-        <Text style={{ color: theme.text }}>Erro ao carregar dados</Text>
-      </View>
-    );
-  }
-
   const p = data.pokemon;
-  const baseColor = TYPE_COLORS[p.types?.[0]] ?? theme.card;
+  const baseColor =
+    TYPE_COLORS[p.types?.[0]] ?? theme.card;
 
   /* ================= UI ================= */
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <Box style={{ flex: 1, backgroundColor: theme.background }}>
       <LinearGradient
-        colors={[theme.background, mode === "light" ? "#F6F7FB" : "#111"]}
+        colors={[
+          theme.background,
+          mode === "light" ? "#F6F7FB" : "#111",
+        ]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -208,15 +170,10 @@ export default function PokemonDetails() {
           paddingBottom: 40,
         }}
         showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
       >
-        {/* IMAGEM + FAVORITO */}
-        <View style={{ alignItems: "center" }}>
-          <Animated.View
+        {/* HEADER */}
+        <VStack alignItems="center">
+          <Box
             style={{
               backgroundColor: theme.card,
               borderRadius: 20,
@@ -232,7 +189,7 @@ export default function PokemonDetails() {
               style={{ width: 220, height: 220 }}
               resizeMode="contain"
             />
-          </Animated.View>
+          </Box>
 
           <Text
             style={{
@@ -245,34 +202,46 @@ export default function PokemonDetails() {
             {p.name}
           </Text>
 
-          <Text style={{ fontSize: 15, color: theme.subtext }}>
+          <Text style={{ color: theme.subtext }}>
             #{p.number}
           </Text>
 
-          <Animated.View style={{ transform: [{ scale: favScale }] }}>
-            <TouchableOpacity onPress={toggleFavorite} style={{ marginTop: 12 }}>
-              <View
+          <Animated.View
+            style={{ transform: [{ scale: favScale }] }}
+          >
+            <Pressable
+              onPress={toggleFavorite}
+              style={{ marginTop: 12 }}
+            >
+              <Box
                 style={{
                   width: 52,
                   height: 52,
                   borderRadius: 14,
                   justifyContent: "center",
                   alignItems: "center",
-                  backgroundColor: isFav ? baseColor : theme.card,
+                  backgroundColor: isFav
+                    ? baseColor
+                    : theme.card,
                   borderWidth: 1,
                   borderColor: theme.border,
                 }}
               >
-                <Text style={{ fontSize: 26, color: isFav ? "#fff" : baseColor }}>
+                <Text
+                  style={{
+                    fontSize: 26,
+                    color: isFav ? "#fff" : baseColor,
+                  }}
+                >
                   {isFav ? "★" : "☆"}
                 </Text>
-              </View>
-            </TouchableOpacity>
+              </Box>
+            </Pressable>
           </Animated.View>
-        </View>
+        </VStack>
 
-        {/* CARD PRINCIPAL */}
-        <View
+        {/* INFO CARD */}
+        <VStack
           style={{
             marginTop: 20,
             padding: 18,
@@ -280,15 +249,18 @@ export default function PokemonDetails() {
             borderWidth: 1,
             backgroundColor: theme.card,
             borderColor: theme.border,
+            gap: 12,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "700", color: theme.text }}>
+          <Text
+            style={{ fontSize: 18, fontWeight: "700", color: theme.text }}
+          >
             Tipos
           </Text>
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 12 }}>
-            {p.types.map((t: string) => (
-              <View
+          <HStack style={{ flexWrap: "wrap" }}>
+            {p.types.map((t) => (
+              <Box
                 key={t}
                 style={{
                   paddingHorizontal: 14,
@@ -299,66 +271,62 @@ export default function PokemonDetails() {
                   backgroundColor: TYPE_COLORS[t] ?? "#999",
                 }}
               >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>{t}</Text>
-              </View>
+                <Text style={{ color: "#fff", fontWeight: "600" }}>
+                  {t}
+                </Text>
+              </Box>
             ))}
-          </View>
+          </HStack>
 
-          <Text style={{ fontSize: 18, fontWeight: "700", color: theme.text }}>
+          <Text
+            style={{ fontSize: 18, fontWeight: "700", color: theme.text }}
+          >
             Classificação
           </Text>
-          <Text style={{ color: theme.subtext, marginTop: 6 }}>
+          <Text style={{ color: theme.subtext }}>
             {p.classification}
           </Text>
 
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginTop: 16,
-              gap: 12,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: theme.text }}>
+          <HStack style={{ gap: 12 }}>
+            <VStack style={{ flex: 1 }}>
+              <Text
+                style={{ fontSize: 18, fontWeight: "700", color: theme.text }}
+              >
                 Resistências
               </Text>
-              <Text style={{ color: theme.subtext, marginTop: 6 }}>
+              <Text style={{ color: theme.subtext }}>
                 {p.resistant.join(", ")}
               </Text>
-            </View>
+            </VStack>
 
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: theme.text }}>
+            <VStack style={{ flex: 1 }}>
+              <Text
+                style={{ fontSize: 18, fontWeight: "700", color: theme.text }}
+              >
                 Fraquezas
               </Text>
-              <Text style={{ color: theme.subtext, marginTop: 6 }}>
+              <Text style={{ color: theme.subtext }}>
                 {p.weaknesses.join(", ")}
               </Text>
-            </View>
-          </View>
+            </VStack>
+          </HStack>
 
           <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "700",
-              marginTop: 16,
-              color: theme.text,
-            }}
+            style={{ fontSize: 18, fontWeight: "700", color: theme.text }}
           >
             Informações Físicas
           </Text>
-          <Text style={{ color: theme.subtext, marginTop: 6 }}>
+          <Text style={{ color: theme.subtext }}>
             Altura: {p.height.minimum} – {p.height.maximum}
           </Text>
-          <Text style={{ color: theme.subtext, marginTop: 4 }}>
+          <Text style={{ color: theme.subtext }}>
             Peso: {p.weight.minimum} – {p.weight.maximum}
           </Text>
-        </View>
+        </VStack>
 
         {/* EVOLUÇÕES */}
-        {p.evolutions?.length > 0 && (
-          <View
+        {p.evolutions && (
+          <VStack
             style={{
               marginTop: 20,
               padding: 18,
@@ -369,36 +337,46 @@ export default function PokemonDetails() {
             }}
           >
             <Text
-              style={{ fontSize: 18, fontWeight: "700", marginBottom: 12, color: theme.text }}
+              style={{ fontSize: 18, fontWeight: "700", color: theme.text }}
             >
               Evoluções
             </Text>
 
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              {p.evolutions.map((evo: any) => (
-                <TouchableOpacity
+            <HStack style={{ gap: 12 }}>
+              {p.evolutions.map((evo) => (
+                <Pressable
                   key={evo.name}
-                  style={{ alignItems: "center" }}
                   onPress={() =>
-                    navigation.push("PokemonDetails", { name: evo.name })
+                    navigation.push("PokemonDetails", {
+                      name: evo.name,
+                    })
                   }
+                  style={{ alignItems: "center" }}
                 >
                   <Image
                     source={{ uri: evo.image }}
-                    style={{ width: 60, height: 60, borderRadius: 12 }}
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 12,
+                    }}
                   />
-                  <Text style={{ color: theme.text, fontSize: 12, marginTop: 4 }}>
+                  <Text
+                    style={{ fontSize: 12, marginTop: 4, color: theme.text }}
+                  >
                     {evo.name}
                   </Text>
-                  <Text style={{ color: theme.subtext, fontSize: 10 }}>
+                  <Text
+                    style={{ fontSize: 10, color: theme.subtext }}
+                  >
                     #{evo.number}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
-            </View>
-          </View>
+            </HStack>
+          </VStack>
         )}
       </Animated.ScrollView>
-    </View>
+    </Box>
   );
 }

@@ -16,13 +16,14 @@ import { client } from "./src/apolloClient";
 // Screens
 import Home from "./src/screens/Home";
 import PokemonDetails from "./src/screens/PokemonDetails";
+import { config } from "@gluestack-ui/config";
 
 
 // Theme Provider
 import { ThemeProvider, useTheme } from "./src/theme/themeContext";
 
 
-import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import { GluestackUIProvider } from "@gluestack-ui/themed";
 import '@/global.css';
 
 const Stack = createNativeStackNavigator();
@@ -55,7 +56,7 @@ function AppNavigation() {
 
   return (
     
-    <GluestackUIProvider mode="dark">
+    <GluestackUIProvider config={config} colorMode={mode}>
       <>
       <StatusBar
         barStyle={mode === "dark" ? "light-content" : "dark-content"}
