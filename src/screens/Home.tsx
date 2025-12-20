@@ -1,10 +1,4 @@
-import React, {
-  useMemo,
-  useState,
-  useEffect,
-  useRef,
-  useLayoutEffect,
-} from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import {
   Animated,
   FlatList,
@@ -41,9 +35,14 @@ import {
 import { GET_POKEMONS } from "../graphql/queries";
 import { useTheme } from "src/theme/themeContext";
 import { RootStackParamList } from "../types/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../store";
+import { setSearch, setType } from "../store/slices/filtersSlice";
 
+/* ==================== TYPES ==================== */
 type NavProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
+/* ==================== CONSTANTS ==================== */
 const types = [
   "Grass",
   "Fire",
@@ -60,7 +59,7 @@ const types = [
   "Ghost",
   "Bug",
   "Ground",
-  "Dark"
+  "Dark",
 ];
 
 const TYPE_COLORS: Record<string, string> = {
@@ -148,17 +147,70 @@ function Skeleton({
     </View>
   );
 }
+function SkeletonCard() {
+  return (
+    <View style={{ width: "48%", marginBottom: 16 }}>
+      <View
+        style={{
+          backgroundColor: "#FFF",
+          borderRadius: 20,
+          padding: 14,
+          alignItems: "center",
+        }}
+      >
+        {/* Imagem */}
+        <Skeleton width={110} height={110} radius={14} />
+
+        {/* Nome */}
+        <Skeleton
+          width="70%"
+          height={16}
+          radius={8}
+          style={{ marginTop: 12 }}
+        />
+
+        {/* Número */}
+        <Skeleton
+          width="40%"
+          height={14}
+          radius={7}
+          style={{ marginTop: 6 }}
+        />
+      </View>
+    </View>
+  );
+}
+function LoadingGrid() {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+        padding: 16,
+      }}
+    >
+      {Array.from({ length: 10 }).map((_, i) => (
+        <SkeletonCard key={i} />
+      ))}
+    </View>
+  );
+}
 
 /* ==================== SEARCH HEADER ==================== */
 function SearchHeader({
-  search,
-  setSearch,
-  typeFilter,
-  setTypeFilter,
   onRefresh,
   isRefreshing,
-}: any) {
+}: {
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
   const { theme } = useTheme();
+  const dispatch = useDispatch();
+
+  const { search, type } = useSelector(
+    (state: RootState) => state.filters
+  );
 
   return (
     <VStack
@@ -174,6 +226,7 @@ function SearchHeader({
         Pokédex
       </Text>
 
+      {/* 🔍 SEARCH */}
       <HStack style={{ alignItems: "center", gap: 12 }}>
         <Input
           style={{
@@ -186,7 +239,7 @@ function SearchHeader({
           <InputField
             placeholder="Buscar Pokémon"
             value={search}
-            onChangeText={setSearch}
+            onChangeText={(text) => dispatch(setSearch(text))}
             placeholderTextColor={theme.textSecondary}
             color={theme.text}
           />
@@ -207,7 +260,11 @@ function SearchHeader({
         </Button>
       </HStack>
 
-      <Select selectedValue={typeFilter} onValueChange={setTypeFilter}>
+      {/* 🧪 FILTER */}
+      <Select
+        selectedValue={type}
+        onValueChange={(value) => dispatch(setType(value))}
+      >
         <SelectTrigger
           style={{
             height: 52,
@@ -226,13 +283,13 @@ function SearchHeader({
               color={theme.textSecondary}
             />
 
-            {typeFilter ? (
+            {type ? (
               <HStack
                 style={{
                   paddingHorizontal: 10,
                   paddingVertical: 4,
                   borderRadius: 12,
-                  backgroundColor: TYPE_COLORS[typeFilter] + "22",
+                  backgroundColor: TYPE_COLORS[type] + "22",
                   alignItems: "center",
                   gap: 6,
                 }}
@@ -242,16 +299,16 @@ function SearchHeader({
                     width: 8,
                     height: 8,
                     borderRadius: 4,
-                    backgroundColor: TYPE_COLORS[typeFilter],
+                    backgroundColor: TYPE_COLORS[type],
                   }}
                 />
                 <Text
                   style={{
                     fontWeight: "700",
-                    color: TYPE_COLORS[typeFilter],
+                    color: TYPE_COLORS[type],
                   }}
                 >
-                  {typeFilter}
+                  {type}
                 </Text>
               </HStack>
             ) : (
@@ -275,8 +332,8 @@ function SearchHeader({
             style={{ backgroundColor: theme.card, borderRadius: 18 }}
           >
             <SelectItem label="Todos" value="" />
-            {types.map((type) => (
-              <SelectItem key={type} label={type} value={type} />
+            {types.map((t) => (
+              <SelectItem key={t} label={t} value={t} />
             ))}
           </SelectContent>
         </SelectPortal>
@@ -298,16 +355,10 @@ function PokemonCard({ p }: { p: any }) {
         navigation.navigate("PokemonDetails", { name: p.name })
       }
       onPressIn={() =>
-        Animated.spring(scale, {
-          toValue: 0.96,
-          useNativeDriver: true,
-        }).start()
+        Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start()
       }
       onPressOut={() =>
-        Animated.spring(scale, {
-          toValue: 1,
-          useNativeDriver: true,
-        }).start()
+        Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()
       }
     >
       <Animated.View style={{ transform: [{ scale }] }}>
@@ -335,54 +386,17 @@ function PokemonCard({ p }: { p: any }) {
   );
 }
 
-/* ==================== LOADING GRID ==================== */
-function LoadingGrid() {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-        padding: 16,
-      }}
-    >
-      {Array.from({ length: 10 }).map((_, i) => (
-        <View key={i} style={{ width: "48%", marginBottom: 16 }}>
-          <View
-            style={{
-              backgroundColor: "#FFF",
-              borderRadius: 20,
-              padding: 14,
-              alignItems: "center",
-            }}
-          >
-            <Skeleton width={110} height={110} radius={14} />
-            <Skeleton width="70%" height={16} style={{ marginTop: 12 }} />
-            <Skeleton width="40%" height={14} style={{ marginTop: 6 }} />
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
-
 /* ==================== HOME ==================== */
 export default function Home() {
-  const navigation = useNavigation<NavProp>();
-  const { theme, toggleTheme, mode } = useTheme();
+  const { theme } = useTheme();
 
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const { search, type } = useSelector(
+    (state: RootState) => state.filters
+  );
 
-  const { data, loading, error, refetch } = useQuery(GET_POKEMONS, {
+  const { data, loading, refetch } = useQuery(GET_POKEMONS, {
     variables: { first: 151 },
   });
-
-  useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput), 200);
-    return () => clearTimeout(t);
-  }, [searchInput]);
 
   const list = data?.pokemons ?? [];
 
@@ -391,42 +405,38 @@ export default function Home() {
       list.filter(
         (p: any) =>
           p.name.toLowerCase().includes(search.toLowerCase()) &&
-          (typeFilter ? p.types.includes(typeFilter) : true)
+          (type ? p.types.includes(type) : true)
       ),
-    [list, search, typeFilter]
+    [list, search, type]
   );
 
-  return (
-    <LinearGradient
-      colors={[theme.background, theme.background]}
-      style={{ flex: 1 }}
-    >
-      <Box style={{ flex: 1 }}>
-        <SearchHeader
-          search={searchInput}
-          setSearch={setSearchInput}
-          typeFilter={typeFilter}
-          setTypeFilter={setTypeFilter}
-          onRefresh={() => refetch()}
-          isRefreshing={loading}
+return (
+  <LinearGradient
+    colors={[theme.background, theme.background]}
+    style={{ flex: 1 }}
+  >
+    <Box style={{ flex: 1 }}>
+      <SearchHeader
+        onRefresh={() => refetch()}
+        isRefreshing={loading}
+      />
+
+      {loading ? (
+        <LoadingGrid />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(p) => p.id}
+          numColumns={2}
+          columnWrapperStyle={{ justifyContent: "space-between" }}
+          contentContainerStyle={{ padding: 16 }}
+          renderItem={({ item }) => <PokemonCard p={item} />}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refetch} />
+          }
         />
-
-        {loading ? (
-          <LoadingGrid />
-        ) : (
-          <FlatList
-            data={filtered}
-            keyExtractor={(p) => p.id}
-            numColumns={2}
-            columnWrapperStyle={{ justifyContent: "space-between" }}
-            contentContainerStyle={{ padding: 16 }}
-            renderItem={({ item }) => <PokemonCard p={item} />}
-            refreshControl={
-              <RefreshControl refreshing={loading} onRefresh={refetch} />
-            }
-          />
-        )}
-      </Box>
-    </LinearGradient>
-  );
+      )}
+    </Box>
+  </LinearGradient>
+)
 }

@@ -6,7 +6,7 @@ import rootReducer from "./rootReducer";
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["favorites"],
+  whitelist: ["favorites"], 
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -21,6 +21,5 @@ export const store = configureStore({
 
 export const persistor = persistStore(store);
 
-/* 🔥 ESSENCIAL */
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
