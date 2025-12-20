@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pokedex",
     "slug": "pokedex",
-    "icon": "./assets/pokedex.png",
+    "scheme": "pokedex",
     "plugins": [
       "expo-asset",
       "expo-notifications",
@@ -10,8 +10,7 @@
       "expo-router"
     ],
     "android": {
-      "package": "br.davydesouza.pokedex",
-      "googleServicesFile": "./android/app/google-services.json"
+      "package": "br.davydesouza.pokedex"
     },
     "extra": {
       "router": {
